@@ -12,9 +12,9 @@ for i in "$@"; do
     PEER_ID="peer_${i//[^[:alnum:]_-]/}"
   fi
 
-  if grep -q "# ${PEER_ID}" /config/wg0.conf; then
+  if grep -q "# ${PEER_ID}" /home/cuong/config/wg0.conf; then
     echo "PEER ${i} QR code:"
-    qrencode -t ansiutf8 < /config/${PEER_ID}/${PEER_ID}.conf
+    qrencode -t ansiutf8 < /home/cuong/config/${PEER_ID}/${PEER_ID}.conf
   else
     echo "PEER ${i} is not active"
   fi

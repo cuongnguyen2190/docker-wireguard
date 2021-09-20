@@ -1,6 +1,6 @@
 #!/usr/bin/with-contenv bash
 
-mkdir -p /config/{templates,coredns}
+mkdir -p /home/cuong/config/{templates,coredns}
 
 echo "Uname info: $(uname -a)"
 # check for wireguard module
@@ -132,7 +132,7 @@ DUDE
       echo "**** Generating signing key ****"
       openssl req -new -nodes -utf8 -sha512 -days 36500 -batch -x509 -config x509.genkey -outform DER -out signing_key.x509 -keyout signing_key.pem
     fi
-    cd /app
+    cd /home/cuong/app
     echo "**** Building the module ****"
     make -C wireguard-linux-compat/src -j$(nproc)
     make -C wireguard-linux-compat/src install
@@ -154,22 +154,22 @@ fi
 # prepare symlinks
 rm -rf /etc/wireguard
 mkdir -p /etc/wireguard
-ln -s /config/wg0.conf /etc/wireguard/wg0.conf
+ln -s /home/cuong/config/wg0.conf /etc/wireguard/wg0.conf
 # prepare templates
-[[ ! -f /config/templates/server.conf ]] && \
-  cp /defaults/server.conf /config/templates/server.conf
-[[ ! -f /config/templates/peer.conf ]] && \
-  cp /defaults/peer.conf /config/templates/peer.conf
+[[ ! -f /home/cuong/config/templates/server.conf ]] && \
+  cp /home/cuong/defaults/server.conf /home/cuong/config/templates/server.conf
+[[ ! -f /home/cuong/config/templates/peer.conf ]] && \
+  cp /home/cuong/defaults/peer.conf /home/cuong/config/templates/peer.conf
 
 generate_confs () {
-  mkdir -p /config/server
-  if [ ! -f /config/server/privatekey-server ]; then
+  mkdir -p /home/cuong/config/server
+  if [ ! -f /home/cuong/config/server/privatekey-server ]; then
     umask 077
-    wg genkey | tee /config/server/privatekey-server | wg pubkey > /config/server/publickey-server
+    wg genkey | tee /home/cuong/config/server/privatekey-server | wg pubkey > /home/cuong/config/server/publickey-server
   fi
   eval "`printf %s`
-  cat <<DUDE > /config/wg0.conf
-`cat /config/templates/server.conf`
+  cat <<DUDE > /home/cuong/config/wg0.conf
+`cat /home/cuong/config/templates/server.conf`
 
 DUDE"
   for i in ${PEERS_ARRAY[@]}; do
@@ -178,44 +178,44 @@ DUDE"
     else
       PEER_ID="peer_${i//[^[:alnum:]_-]/}"
     fi
-    mkdir -p /config/${PEER_ID}
-    if [ ! -f "/config/${PEER_ID}/privatekey-${PEER_ID}" ]; then
+    mkdir -p /home/cuong/config/${PEER_ID}
+    if [ ! -f "/home/cuong/config/${PEER_ID}/privatekey-${PEER_ID}" ]; then
       umask 077
-      wg genkey | tee /config/${PEER_ID}/privatekey-${PEER_ID} | wg pubkey > /config/${PEER_ID}/publickey-${PEER_ID}
+      wg genkey | tee /home/cuong/config/${PEER_ID}/privatekey-${PEER_ID} | wg pubkey > /home/cuong/config/${PEER_ID}/publickey-${PEER_ID}
     fi
-    if [ -f "/config/${PEER_ID}/${PEER_ID}.conf" ]; then
-      CLIENT_IP=$(cat /config/${PEER_ID}/${PEER_ID}.conf | grep "Address" | awk '{print $NF}')
+    if [ -f "/home/cuong/config/${PEER_ID}/${PEER_ID}.conf" ]; then
+      CLIENT_IP=$(cat /home/cuong/config/${PEER_ID}/${PEER_ID}.conf | grep "Address" | awk '{print $NF}')
       if [ -n "${ORIG_INTERFACE}" ] && [ "${INTERFACE}" != "${ORIG_INTERFACE}" ]; then
         CLIENT_IP=$(echo "${CLIENT_IP}" | sed "s|${ORIG_INTERFACE}|${INTERFACE}|")
       fi
     else
       for idx in {2..254}; do
         PROPOSED_IP="${INTERFACE}.${idx}"
-        if ! grep -q -R "${PROPOSED_IP}" /config/peer*/*.conf && ([ -z "${ORIG_INTERFACE}" ] || ! grep -q -R "${ORIG_INTERFACE}.${idx}" /config/peer*/*.conf); then
+        if ! grep -q -R "${PROPOSED_IP}" /home/cuong/config/peer*/*.conf && ([ -z "${ORIG_INTERFACE}" ] || ! grep -q -R "${ORIG_INTERFACE}.${idx}" /home/cuong/config/peer*/*.conf); then
           CLIENT_IP="${PROPOSED_IP}"
           break
         fi
       done
     fi
     eval "`printf %s`
-    cat <<DUDE > /config/${PEER_ID}/${PEER_ID}.conf
-`cat /config/templates/peer.conf`
+    cat <<DUDE > /home/cuong/config/${PEER_ID}/${PEER_ID}.conf
+`cat /home/cuong/config/templates/peer.conf`
 DUDE"
-    cat <<DUDE >> /config/wg0.conf
+    cat <<DUDE >> /home/cuong/config/wg0.conf
 [Peer]
 # ${PEER_ID}
-PublicKey = $(cat /config/${PEER_ID}/publickey-${PEER_ID})
+PublicKey = $(cat /home/cuong/config/${PEER_ID}/publickey-${PEER_ID})
 AllowedIPs = ${CLIENT_IP}/32
 
 DUDE
     echo "PEER ${i} QR code:"
-    qrencode -t ansiutf8 < /config/${PEER_ID}/${PEER_ID}.conf
-    qrencode -o /config/${PEER_ID}/${PEER_ID}.png < /config/${PEER_ID}/${PEER_ID}.conf
+    qrencode -t ansiutf8 < /home/cuong/config/${PEER_ID}/${PEER_ID}.conf
+    qrencode -o /home/cuong/config/${PEER_ID}/${PEER_ID}.png < /home/cuong/config/${PEER_ID}/${PEER_ID}.conf
   done
 }
 
 save_vars () {
-  cat <<DUDE > /config/.donoteditthisfile
+  cat <<DUDE > /home/cuong/config/.donoteditthisfile
 ORIG_SERVERURL="$SERVERURL"
 ORIG_SERVERPORT="$SERVERPORT"
 ORIG_PEERDNS="$PEERDNS"
@@ -252,14 +252,14 @@ if [ -n "$PEERS" ]; then
   else
     echo "**** Peer DNS servers will be set to $PEERDNS ****"
   fi
-  if [ ! -f /config/wg0.conf ]; then
+  if [ ! -f /home/cuong/config/wg0.conf ]; then
     echo "**** No wg0.conf found (maybe an initial install), generating 1 server and ${PEERS} peer/client confs ****"
     generate_confs
     save_vars
   else
     echo "**** Server mode is selected ****"
-    [[ -f /config/.donoteditthisfile ]] && \
-      . /config/.donoteditthisfile
+    [[ -f /home/cuong/config/.donoteditthisfile ]] && \
+      . /home/cuong/config/.donoteditthisfile
     if [ "$SERVERURL" != "$ORIG_SERVERURL" ] || [ "$SERVERPORT" != "$ORIG_SERVERPORT" ] || [ "$PEERDNS" != "$ORIG_PEERDNS" ] || [ "$PEERS" != "$ORIG_PEERS" ] || [ "$INTERFACE" != "$ORIG_INTERFACE" ] || [ "$ALLOWEDIPS" != "$ORIG_ALLOWEDIPS" ]; then
       echo "**** Server related environment variables changed, regenerating 1 server and ${PEERS} peer/client confs ****"
       generate_confs
@@ -270,8 +270,8 @@ if [ -n "$PEERS" ]; then
   fi
 else
   echo "**** Client mode selected. ****"
-  if [ ! -f /config/wg0.conf ]; then
-    echo "**** No client conf found. Provide your own client conf as \"/config/wg0.conf\" and restart the container. ****"
+  if [ ! -f /home/cuong/config/wg0.conf ]; then
+    echo "**** No client conf found. Provide your own client conf as \"/home/cuong/config/wg0.conf\" and restart the container. ****"
     sleep infinity
   fi
   echo "**** Disabling CoreDNS ****"
@@ -279,9 +279,9 @@ else
 fi
 
 # set up CoreDNS
-[[ ! -f /config/coredns/Corefile ]] && \
-  cp /defaults/Corefile /config/coredns/Corefile
+[[ ! -f /home/cuong/config/coredns/Corefile ]] && \
+  cp /home/cuong/defaults/Corefile /home/cuong/config/coredns/Corefile
 
 # permissions
-chown -R abc:abc \
-	/config
+chown -R cuong:cuong \
+	/home/cuong/config

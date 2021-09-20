@@ -1,10 +1,11 @@
-FROM ghcr.io/linuxserver/baseimage-ubuntu:bionic
+FROM hungcuongvt90/ubuntu_base_tool:focal
 
 # set version label
-ARG BUILD_DATE
-ARG VERSION
+# ARG BUILD_DATE
+# ARG VERSION
 ARG WIREGUARD_RELEASE
-LABEL build_version="Linuxserver.io version:- ${VERSION} Build-date:- ${BUILD_DATE}"
+ENV WIREGUARD_RELEASE=${WIREGUARD_RELEASE:-v1.0.20210914}
+# LABEL build_version="Linuxserver.io version:- ${VERSION} Build-date:- ${BUILD_DATE}"
 LABEL maintainer="aptalca"
 
 ENV DEBIAN_FRONTEND="noninteractive"
@@ -16,6 +17,7 @@ RUN \
 	bc \
 	build-essential \
 	curl \
+	sudo \
 	dkms \
 	git \
 	gnupg \ 
@@ -36,7 +38,7 @@ RUN \
 	WIREGUARD_RELEASE=$(curl -sX GET "https://api.github.com/repos/WireGuard/wireguard-tools/tags" \
 	| jq -r .[0].name); \
  fi && \
- cd /app && \
+ cd /home/cuong/app && \
  git clone https://git.zx2c4.com/wireguard-linux-compat && \
  git clone https://git.zx2c4.com/wireguard-tools && \
  cd wireguard-tools && \
@@ -51,7 +53,7 @@ RUN \
 	"https://github.com/coredns/coredns/releases/download/v${COREDNS_VERSION}/coredns_${COREDNS_VERSION}_linux_amd64.tgz" && \
  tar xf \
 	/tmp/coredns.tar.gz -C \
-	/app && \
+	/home/cuong/app && \
  echo "**** clean up ****" && \
  rm -rf \
 	/tmp/* \
@@ -59,7 +61,11 @@ RUN \
 	/var/tmp/*
 
 # add local files
-COPY /root /
+COPY /root/app /home/cuong/app
+COPY /root/defaults /home/cuong/defaults
+COPY /root/etc /etc
+
+ENV PATH=${PATH}:/home/cuong/app
 
 # ports and volumes
 EXPOSE 51820/udp
