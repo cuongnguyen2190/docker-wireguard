@@ -1,4 +1,4 @@
-FROM hungcuongvt90/ubuntu_base_tool:focal
+FROM hungcuongvt90/ubuntu:focal-aarch64
 
 # set version label
 ARG BUILD_DATE
@@ -37,6 +37,7 @@ RUN \
 	WIREGUARD_RELEASE=$(curl -sX GET "https://api.github.com/repos/WireGuard/wireguard-tools/tags" \
 	| jq -r .[0].name); \
  fi && \
+ mkdir -p /home/cuong/app && \
  cd /home/cuong/app && \
  git clone https://git.zx2c4.com/wireguard-linux-compat && \
  git clone https://git.zx2c4.com/wireguard-tools && \
@@ -52,7 +53,7 @@ RUN \
 	"https://github.com/coredns/coredns/releases/download/v${COREDNS_VERSION}/coredns_${COREDNS_VERSION}_linux_arm64.tgz" && \
  tar xf \
 	/tmp/coredns.tar.gz -C \
-	/app && \
+	/home/cuong/app && \
  echo "**** clean up ****" && \
  rm -rf \
 	/tmp/* \
